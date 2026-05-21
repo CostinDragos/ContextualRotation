@@ -16,6 +16,9 @@ public class ContextualRotation {
 
   public var currentLockedOrientation: UIInterfaceOrientationMask = .all
   private var targetInterfaceOrientation: UIInterfaceOrientation = .unknown
+  
+  private var isUIAnimatingRotation = false
+  private var evaluationTask: Task<Void, Never>?
 
   private var hideButtonTask: Task<Void, Never>?
 
@@ -40,8 +43,21 @@ public class ContextualRotation {
     window.backgroundColor = .clear
     window.isUserInteractionEnabled = false
 
-    let rootVC = UIViewController()
+    let rootVC = OverlayViewCotroller()
     rootVC.view.backgroundColor = .clear
+    window.rootViewController = rootVC
+    
+    rootVC.onTransitionStart = { [weak self] in
+      self?.evaluationTask?.cancel()
+      self?.isUIAnimatingRotation = true
+      self?.toggleButton(show: false)
+    }
+    
+    rootVC.onTransitionEnd = { [weak self] in
+      self?.isUIAnimatingRotation = false
+      self?.evaluateUI()
+    }
+    
     window.rootViewController = rootVC
 
     rotationButton = UIButton(type: .system)
@@ -107,11 +123,20 @@ public class ContextualRotation {
 
     if newPhysicalOrientation != physicalOrientation, newPhysicalOrientation != .unknown {
       physicalOrientation = newPhysicalOrientation
-      evaluateUI()
+      evaluationTask?.cancel()
+      evaluationTask = Task { [weak self] in
+        do {
+          try await Task.sleep(nanoseconds: 300_000_000)
+          self?.evaluateUI()
+        } catch {
+          // Native rotation started.
+        }
+      }
     }
   }
 
   private func evaluateUI() {
+    guard !isUIAnimatingRotation else { return }
     guard let windowScene = overlayWindow?.windowScene else { return }
     let uiOrientation = windowScene.interfaceOrientation
 
@@ -204,6 +229,23 @@ public class ContextualRotation {
 
     windowScene.requestGeometryUpdate(geometryUpdate) { error in
       print("ContextualRotation: Failed to rotate -> \(error.localizedDescription)")
+    }
+  }
+}
+
+// MARK: - Native Rotation Detection
+
+private class OverlayViewCotroller: UIViewController {
+  var onTransitionStart: (() -> Void)?
+  var onTransitionEnd: (() -> Void)?
+  
+  override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
+    super.viewWillTransition(to: size, with: coordinator)
+    
+    onTransitionStart?()
+    
+    coordinator.animate(alongsideTransition: nil) { _ in
+      self.onTransitionEnd?()
     }
   }
 }
