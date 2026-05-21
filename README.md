@@ -1,6 +1,6 @@
 # ContextualRotation
 
-[![Swift](https://img.shields.io/badge/Swift-5.7+-orange.svg)](https://swift.org)[![iOS](https://img.shields.io/badge/iOS-16.0+-blue.svg)](https://developer.apple.com/ios/)[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org) [![iOS](https://img.shields.io/badge/iOS-16.0+-blue.svg)](https://developer.apple.com/ios/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A native Swift package that brings Android's brilliant contextual rotation button to iOS.
 
@@ -18,8 +18,8 @@ It feels completely native, respects the user's system preferences, and provides
 ## Requirements
 
 - iOS 16.0+
-- Xcode 14.0+
-- Swift 5.7+
+- Xcode 16.0+
+- Swift 6.0+
 
 ## Installation
 
