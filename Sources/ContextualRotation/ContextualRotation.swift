@@ -61,7 +61,7 @@ public class ContextualRotation {
   }
 
   private func setupOverlayWindow(in windowScene: UIWindowScene) {
-    let window = UIWindow(windowScene: windowScene)
+    let window = PassThroughWindow(windowScene: windowScene)
     window.windowLevel = .alert + 1
     window.backgroundColor = .clear
     window.isUserInteractionEnabled = false
@@ -281,5 +281,20 @@ private class OverlayViewController: UIViewController {
     coordinator.animate(alongsideTransition: nil) { _ in
       self.onTransitionEnd?()
     }
+  }
+}
+
+// MARK: - Pass-Through Window
+
+/// A window that ignores touches on its empty background space, allowing them to pass through to
+/// the application below, while still catching touches on its subviews.
+private class PassThroughWindow: UIWindow {
+  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    let hitView = super.hitTest(point, with: event)
+
+    if hitView == self || hitView == rootViewController?.view {
+      return nil
+    }
+    return hitView
   }
 }
