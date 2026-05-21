@@ -27,5 +27,5 @@ let package = Package(
       dependencies: ["ContextualRotation"],
     ),
   ],
-  swiftLanguageModes: [.version("6.3.2")],
+  swiftLanguageModes: [.v6],
 )
