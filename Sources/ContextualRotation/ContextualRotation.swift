@@ -1,39 +1,62 @@
 import CoreMotion
 import UIKit
 
+/// A native manager that tracks physical hardware rotation and provides an Android-Style
+/// Contextual bypass button for when the iOS system orientation lock is enabled.
 @MainActor
 public class ContextualRotation {
+  /// Shared Singleton instance for the contextual rotation manager.
   public static let shared = ContextualRotation()
 
   private let motionManager = CMMotionManager()
   private var overlayWindow: UIWindow?
   private var rotationButton: UIButton!
-  
+
   private var trailingConstraint: NSLayoutConstraint!
   private var leadingConstraint: NSLayoutConstraint!
 
   private var physicalOrientation: UIInterfaceOrientation = .unknown
 
+  /// The dynamic orientation mask that the host application's `App Delegate` must return.
+  /// By returning this value in `supportedInterfaceOrientationsFor`, you allow the
+  /// library to forefully bypass the system lock when the user taps the button.
   public var currentLockedOrientation: UIInterfaceOrientationMask = .all
+
   private var targetInterfaceOrientation: UIInterfaceOrientation = .unknown
-  
+
   private var isUIAnimatingRotation = false
   private var evaluationTask: Task<Void, Never>?
-
   private var hideButtonTask: Task<Void, Never>?
 
   private init() {}
 
+  /// Initializes the hardware motion tracking and attaches the contextual rotation listener to the
+  /// provided window scene
+  ///
+  /// - Parameter windowScene: The `UIWindowScene` where the invisible overlay and floating point
+  /// should be injected.
   public func start(in windowScene: UIWindowScene) {
     setupOverlayWindow(in: windowScene)
     startMotionTracking()
-    
-    NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-      self?.evaluateUI()
+
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.didBecomeActiveNotification,
+      object: nil,
+      queue: .main,
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        self?.evaluateUI()
+      }
     }
-    
-    NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
-      self?.currentLockedOrientation = .all
+
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.didEnterBackgroundNotification,
+      object: nil,
+      queue: .main,
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        self?.currentLockedOrientation = .all
+      }
     }
   }
 
@@ -43,21 +66,21 @@ public class ContextualRotation {
     window.backgroundColor = .clear
     window.isUserInteractionEnabled = false
 
-    let rootVC = OverlayViewCotroller()
+    let rootVC = OverlayViewController()
     rootVC.view.backgroundColor = .clear
     window.rootViewController = rootVC
-    
+
     rootVC.onTransitionStart = { [weak self] in
       self?.evaluationTask?.cancel()
       self?.isUIAnimatingRotation = true
       self?.toggleButton(show: false)
     }
-    
+
     rootVC.onTransitionEnd = { [weak self] in
       self?.isUIAnimatingRotation = false
       self?.evaluateUI()
     }
-    
+
     window.rootViewController = rootVC
 
     rotationButton = UIButton(type: .system)
@@ -79,10 +102,16 @@ public class ContextualRotation {
     rootVC.view.addSubview(rotationButton)
 
     rotationButton.translatesAutoresizingMaskIntoConstraints = false
-    
-    trailingConstraint = rotationButton.trailingAnchor.constraint(equalTo: rootVC.view.safeAreaLayoutGuide.trailingAnchor, constant: -20)
-    leadingConstraint = rotationButton.leadingAnchor.constraint(equalTo: rootVC.view.safeAreaLayoutGuide.leadingAnchor, constant: 20)
-    
+
+    trailingConstraint = rotationButton.trailingAnchor.constraint(
+      equalTo: rootVC.view.safeAreaLayoutGuide.trailingAnchor,
+      constant: -20,
+    )
+    leadingConstraint = rotationButton.leadingAnchor.constraint(
+      equalTo: rootVC.view.safeAreaLayoutGuide.leadingAnchor,
+      constant: 20,
+    )
+
     NSLayoutConstraint.activate([
       rotationButton.widthAnchor.constraint(equalToConstant: 50),
       rotationButton.heightAnchor.constraint(equalToConstant: 50),
@@ -102,8 +131,10 @@ public class ContextualRotation {
 
     motionManager.accelerometerUpdateInterval = 0.2
     motionManager.startAccelerometerUpdates(to: .main) { [weak self] data, _ in
-      guard let self, let data else { return }
-      processAcceleration(data.acceleration)
+      MainActor.assumeIsolated {
+        guard let self, let data else { return }
+        self.processAcceleration(data.acceleration)
+      }
     }
   }
 
@@ -148,7 +179,7 @@ public class ContextualRotation {
     if physicalOrientation == .portraitUpsideDown { return }
 
     targetInterfaceOrientation = physicalOrientation
-    
+
     if targetInterfaceOrientation == .landscapeRight {
       trailingConstraint.isActive = false
       leadingConstraint.isActive = true
@@ -164,13 +195,12 @@ public class ContextualRotation {
         trailingConstraint.isActive = true
       }
     }
-    
+
     overlayWindow?.rootViewController?.view.layoutIfNeeded()
-    
+
     toggleButton(show: true)
   }
 
-  
   private func toggleButton(show: Bool) {
     guard let window = overlayWindow else { return }
 
@@ -235,15 +265,19 @@ public class ContextualRotation {
 
 // MARK: - Native Rotation Detection
 
-private class OverlayViewCotroller: UIViewController {
-  var onTransitionStart: (() -> Void)?
-  var onTransitionEnd: (() -> Void)?
-  
-  override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
+/// A lightweight view controller that intercepts native system rotation events.
+private class OverlayViewController: UIViewController {
+  var onTransitionStart: (@MainActor () -> Void)?
+  var onTransitionEnd: (@MainActor () -> Void)?
+
+  override func viewWillTransition(
+    to size: CGSize,
+    with coordinator: any UIViewControllerTransitionCoordinator,
+  ) {
     super.viewWillTransition(to: size, with: coordinator)
-    
+
     onTransitionStart?()
-    
+
     coordinator.animate(alongsideTransition: nil) { _ in
       self.onTransitionEnd?()
     }

@@ -1,57 +1,48 @@
-import XCTest
 @testable import ContextualRotation
+import XCTest
 
 @MainActor
 final class ContextualRotationTests: XCTestCase {
-
-  override func setUp() {
-    super.setUp()
-    // Reset the singleton state before each test to ensure a clean slate
+  override func setUp() async throws {
+    try await super.setUp()
     ContextualRotation.shared.currentLockedOrientation = .all
   }
 
   func test_sharedInstance_isAccessible() {
-    // Arrange & Act
     let sut = ContextualRotation.shared
 
-    // Assert
     XCTAssertNotNil(
       sut,
-      "The shared singleton instance should be safely accessible on the MainActor."
+      "The shared singleton instance should be safely accessible on the MainActor.",
     )
   }
 
   func test_defaultOrientationMask_allowsAll() {
-    // Arrange
     let sut = ContextualRotation.shared
 
-    // Act
     let currentMask = sut.currentLockedOrientation
 
-    // Assert
     XCTAssertEqual(
       currentMask,
       .all,
-      "The package MUST default to '.all'. Otherwise, it could accidentally lock the host app's orientation before the rotation button is explicitly tapped."
+      "The package MUST default to '.all'. Otherwise, it could accidentally lock the host app's orientation before the rotation button is explicitly tapped.",
     )
   }
 
   func test_orientationMask_updatesCorrectly() {
-    // Arrange
     let sut = ContextualRotation.shared
 
-    // Act
     sut.currentLockedOrientation = .landscapeRight
 
-    // Assert
     XCTAssertEqual(
       sut.currentLockedOrientation,
       .landscapeRight,
-      "The orientation mask should successfully retain the new value requested by the UI."
+      "The orientation mask should successfully retain the new value requested by the UI.",
     )
   }
 
   // MARK: - Note to Contributors
+
   //
   // `UIWindowScene` injection and `CMMotionManager` hardware readings rely heavily on
   // physical device constraints and iOS UIKit internals.
