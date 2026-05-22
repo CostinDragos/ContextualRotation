@@ -139,6 +139,17 @@ public class ContextualRotation {
   }
 
   private func processAcceleration(_ acceleration: CMAcceleration) {
+    let x = acceleration.x
+    let y = acceleration.y
+    let z = acceleration.z
+    
+    guard x != 0 || y != 0 || z != 0 else { return }
+    guard abs(z) < 0.85 else { return }
+    
+    let isLandscape = abs(x) > abs(y) + 0.15
+    let isPortrait = abs(y) > abs(x) + 0.15
+    guard isLandscape || isPortrait else { return }
+    
     let threshold = 0.75
     var newPhysicalOrientation: UIInterfaceOrientation = physicalOrientation
 
@@ -170,6 +181,7 @@ public class ContextualRotation {
     guard !isUIAnimatingRotation else { return }
     guard let windowScene = overlayWindow?.windowScene else { return }
     let uiOrientation = windowScene.interfaceOrientation
+    guard uiOrientation != .unknown else { return }
 
     if physicalOrientation == uiOrientation {
       toggleButton(show: false)
