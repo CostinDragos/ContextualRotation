@@ -56,6 +56,8 @@ public class ContextualRotation {
     ) { [weak self] _ in
       MainActor.assumeIsolated {
         self?.currentLockedOrientation = .all
+        self?.physicalOrientation = .unknown
+        self?.toggleButton(show: false)
       }
     }
   }
@@ -142,14 +144,14 @@ public class ContextualRotation {
     let x = acceleration.x
     let y = acceleration.y
     let z = acceleration.z
-    
+
     guard x != 0 || y != 0 || z != 0 else { return }
     guard abs(z) < 0.85 else { return }
-    
+
     let isLandscape = abs(x) > abs(y) + 0.15
     let isPortrait = abs(y) > abs(x) + 0.15
     guard isLandscape || isPortrait else { return }
-    
+
     let threshold = 0.75
     var newPhysicalOrientation: UIInterfaceOrientation = physicalOrientation
 
@@ -183,12 +185,17 @@ public class ContextualRotation {
     let uiOrientation = windowScene.interfaceOrientation
     guard uiOrientation != .unknown else { return }
 
-    if physicalOrientation == uiOrientation {
+    guard physicalOrientation != .unknown else {
       toggleButton(show: false)
       return
     }
 
     if physicalOrientation == .portraitUpsideDown { return }
+
+    if physicalOrientation == uiOrientation {
+      toggleButton(show: false)
+      return
+    }
 
     targetInterfaceOrientation = physicalOrientation
 
@@ -218,14 +225,24 @@ public class ContextualRotation {
 
     if show {
       window.isUserInteractionEnabled = true
-      UIView.animate(withDuration: 0.3) {
-        self.rotationButton.alpha = 1.0
-        self.rotationButton.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
-      } completion: { _ in
-        UIView.animate(withDuration: 0.1) {
-          self.rotationButton.transform = .identity
-        }
-      }
+      UIView.animate(
+        withDuration: 0.3,
+        delay: 0,
+        options: [.allowUserInteraction, .curveEaseOut],
+        animations: {
+          self.rotationButton.alpha = 1.0
+          self.rotationButton.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+        }, completion: { _ in
+          UIView.animate(
+            withDuration: 0.1,
+            delay: 0,
+            options: [.allowUserInteraction, .curveEaseIn],
+            animations: {
+              self.rotationButton.transform = .identity
+            },
+          )
+        },
+      )
 
       hideButtonTask?.cancel()
       hideButtonTask = Task {
