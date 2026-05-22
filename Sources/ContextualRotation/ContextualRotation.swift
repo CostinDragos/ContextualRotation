@@ -42,7 +42,7 @@ public class ContextualRotation {
     NotificationCenter.default.addObserver(
       forName: UIApplication.didBecomeActiveNotification,
       object: nil,
-      queue: .main,
+      queue: .main
     ) { [weak self] _ in
       MainActor.assumeIsolated {
         self?.evaluateUI()
@@ -52,7 +52,7 @@ public class ContextualRotation {
     NotificationCenter.default.addObserver(
       forName: UIApplication.didEnterBackgroundNotification,
       object: nil,
-      queue: .main,
+      queue: .main
     ) { [weak self] _ in
       MainActor.assumeIsolated {
         self?.currentLockedOrientation = .all
@@ -107,11 +107,11 @@ public class ContextualRotation {
 
     trailingConstraint = rotationButton.trailingAnchor.constraint(
       equalTo: rootVC.view.safeAreaLayoutGuide.trailingAnchor,
-      constant: -20,
+      constant: -20
     )
     leadingConstraint = rotationButton.leadingAnchor.constraint(
       equalTo: rootVC.view.safeAreaLayoutGuide.leadingAnchor,
-      constant: 20,
+      constant: 20
     )
 
     NSLayoutConstraint.activate([
@@ -119,9 +119,9 @@ public class ContextualRotation {
       rotationButton.heightAnchor.constraint(equalToConstant: 50),
       rotationButton.bottomAnchor.constraint(
         equalTo: rootVC.view.safeAreaLayoutGuide.bottomAnchor,
-        constant: -20,
+        constant: -20
       ),
-      trailingConstraint,
+      trailingConstraint
     ])
 
     overlayWindow = window
@@ -239,9 +239,9 @@ public class ContextualRotation {
             options: [.allowUserInteraction, .curveEaseIn],
             animations: {
               self.rotationButton.transform = .identity
-            },
+            }
           )
-        },
+        }
       )
 
       hideButtonTask?.cancel()
@@ -301,7 +301,7 @@ private class OverlayViewController: UIViewController {
 
   override func viewWillTransition(
     to size: CGSize,
-    with coordinator: any UIViewControllerTransitionCoordinator,
+    with coordinator: any UIViewControllerTransitionCoordinator
   ) {
     super.viewWillTransition(to: size, with: coordinator)
 

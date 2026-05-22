@@ -13,7 +13,7 @@ final class ContextualRotationTests: XCTestCase {
 
     XCTAssertNotNil(
       sut,
-      "The shared singleton instance should be safely accessible on the MainActor.",
+      "The shared singleton instance should be safely accessible on the MainActor."
     )
   }
 
@@ -25,7 +25,7 @@ final class ContextualRotationTests: XCTestCase {
     XCTAssertEqual(
       currentMask,
       .all,
-      "The package MUST default to '.all'. Otherwise, it could accidentally lock the host app's orientation before the rotation button is explicitly tapped.",
+      "The package MUST default to '.all'. Otherwise, it could accidentally lock the host app's orientation before the rotation button is explicitly tapped."
     )
   }
 
@@ -37,7 +37,7 @@ final class ContextualRotationTests: XCTestCase {
     XCTAssertEqual(
       sut.currentLockedOrientation,
       .landscapeRight,
-      "The orientation mask should successfully retain the new value requested by the UI.",
+      "The orientation mask should successfully retain the new value requested by the UI."
     )
   }
 
